@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { webcrypto } from 'node:crypto';
+import vm from 'node:vm';
+
+const criarStorage = () => {
+  const valores = new Map();
+  return { getItem: chave => valores.get(chave) ?? null, setItem: (chave, valor) => valores.set(chave, valor), removeItem: chave => valores.delete(chave) };
+};
+const ambiente = { window: {}, crypto: webcrypto, TextEncoder, localStorage: criarStorage(), sessionStorage: criarStorage() };
+vm.createContext(ambiente);
+for (const nome of ['dados', 'regras', 'armazenamento']) vm.runInContext(readFileSync(new URL('../js/' + nome + '.js', import.meta.url), 'utf8'), ambiente);
+const r = ambiente.window.regrasPedido;
+const b = ambiente.window.bancoLocal;
+const produtos = ambiente.window.dadosRestaurante.produtos;
+const item = (preco = 3290, quantidade = 1) => ({ produtoId: 'baiao', preco, quantidade });
+let quantidadeTestes = 0;
+async function testar(nome, acao) { await acao(); quantidadeTestes++; console.log('OK ' + quantidadeTestes + ' - ' + nome); }
+
+await testar('cadastro válido com ciência do aviso', () => assert.equal(r.validarCadastro('Ana', 'ana@exemplo.com', 'teste1234', 'teste1234', true), ''));
+await testar('nome vazio rejeitado', () => assert.match(r.validarCadastro('', 'a@exemplo.com', 'teste1234', 'teste1234', true), /nome/));
+await testar('e-mail inválido rejeitado', () => assert.match(r.validarCadastro('Ana', 'ana@', 'teste1234', 'teste1234', true), /e-mail/));
+await testar('senha curta rejeitada', () => assert.match(r.validarCadastro('Ana', 'ana@exemplo.com', '123', '123', true), /senha/));
+await testar('senhas diferentes rejeitadas', () => assert.match(r.validarCadastro('Ana', 'ana@exemplo.com', 'teste1234', 'outra1234', true), /iguais/));
+await testar('cadastro sem ciência rejeitado', () => assert.match(r.validarCadastro('Ana', 'ana@exemplo.com', 'teste1234', 'teste1234', false), /privacidade/));
+await testar('cálculo inteiro do subtotal', () => assert.equal(r.calcular([item(3290, 2)], '', false, 0).total, 6580));
+await testar('cupom de 10% com arredondamento', () => assert.equal(r.calcular([item()], 'CHEGUEI10', false, 0).total, 2961));
+await testar('desconto limitado a R$ 15', () => assert.equal(r.calcular([item(3290, 10)], 'CHEGUEI10', false, 0).desconto, 1500));
+await testar('cupom abaixo do mínimo rejeitado', () => assert.match(r.calcular([item(2999)], 'CHEGUEI10', false, 0).erro, /30,00/));
+await testar('cupom inexistente rejeitado', () => assert.match(r.calcular([item()], 'TESTE', false, 0).erro, /inválido/));
+await testar('campanha desligada rejeitada', () => assert.match(r.calcular([item()], 'CHEGUEI10', false, 0, false).erro, /indisponível/));
+await testar('cupom não acumula com pontos', () => assert.match(r.calcular([item()], 'CHEGUEI10', true, 100).erro, /cumulativos/));
+await testar('recompensa com saldo suficiente', () => assert.equal(r.calcular([item()], '', true, 100).total, 2290));
+await testar('saldo insuficiente preserva desconto zero', () => { const v = r.calcular([item()], '', true, 99); assert.ok(v.erro); assert.equal(v.desconto, 0); });
+await testar('recompensa exige pedido de R$ 20', () => assert.ok(r.calcular([item(1999)], '', true, 100).erro));
+await testar('pontos usam valor líquido inteiro', () => assert.equal(r.calcular([item()], 'CHEGUEI10', false, 0).pontosGanhos, 29));
+await testar('sacola vazia rejeitada', () => assert.match(r.validarCarrinho([], produtos, 'recife'), /vazia/));
+await testar('preço de outra unidade rejeitado', () => assert.match(r.validarCarrinho([item(3190)], produtos, 'recife'), /preço/));
+await testar('quantidade decimal rejeitada', () => assert.match(r.validarCarrinho([item(3290, 1.5)], produtos, 'recife'), /1 a 20/));
+await testar('indisponibilidade da gerência respeitada', () => assert.match(r.validarCarrinho([item()], produtos, 'recife', { 'recife:baiao': false }), /indisponível/));
+await testar('cozinha não confirma retirada', () => assert.equal(r.proximaEtapa(2, 'cozinha'), 2));
+await testar('atendente confirma somente pedido pronto', () => { assert.equal(r.proximaEtapa(1, 'atendente'), 1); assert.equal(r.proximaEtapa(2, 'atendente'), 3); });
+await testar('texto digitado escapa caracteres HTML', () => assert.equal(r.limparTexto('<img src=x onerror="alert(1)">'), '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'));
+let conta;
+await testar('cadastro local armazena derivação e não senha legível', async () => { conta = await b.cadastrar('Ana', 'ANA@EXEMPLO.COM', 'teste1234', false); assert.equal(conta.email, 'ana@exemplo.com'); assert.equal(conta.marketing, false); assert.equal(conta.senhaResumo.length, 64); assert.ok(!ambiente.localStorage.getItem('raizes_contas').includes('teste1234')); });
+await testar('cadastro duplicado é rejeitado', async () => { await assert.rejects(b.cadastrar('Outra', 'ana@exemplo.com', 'teste1234', false), /já tem/); });
+await testar('login correto encontra a conta', async () => assert.equal((await b.entrar('ana@exemplo.com', 'teste1234')).id, conta.id));
+await testar('login incorreto é rejeitado', async () => { await assert.rejects(b.entrar('ana@exemplo.com', 'errada123'), /incorretos/); });
+await testar('alteração de consentimento é persistida', () => { b.atualizarConta({ ...conta, marketing: true }); assert.equal(b.ler('contas', [])[0].marketing, true); });
+await testar('armazenamento com JSON inválido usa padrão', () => { ambiente.localStorage.setItem('raizes_teste', '{'); assert.equal(b.ler('teste', []).length, 0); });
+await testar('formato inesperado usa padrão', () => { ambiente.localStorage.setItem('raizes_teste', '{}'); assert.equal(b.ler('teste', []).length, 0); });
+await testar('bloqueio de gravação retorna erro claro', () => { ambiente.sessionStorage.setItem = () => { throw new Error('quota'); }; assert.throws(() => b.salvar('teste', true, true), /Não foi possível salvar/); });
+console.log(`\n${quantidadeTestes} verificações aprovadas. Regras e armazenamento; não substituem testes visuais em navegadores.`);

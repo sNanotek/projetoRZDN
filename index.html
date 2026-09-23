@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema="claro">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Projeto Raízes do Nordeste: cardápio por unidade e pedidos para retirada.">
+  <title>Raízes do Nordeste</title>
+  <link rel="icon" href="imagens/icone.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/estilo.css">
+  <script src="js/dados.js" defer></script>
+  <script src="js/regras.js" defer></script>
+  <script src="js/armazenamento.js" defer></script>
+  <script src="js/principal.js" defer></script>
+</head>
+
+<body>
+  <a class="pularConteudo" href="#conteudo">Ir para o conteúdo</a>
+
+  <header class="cabecalho">
+    <div class="limite linhaCabecalho">
+      <a class="marca" href="#cardapio">Raízes do Nordeste</a>
+      <nav class="menuPrincipal" aria-label="Menu principal">
+        <a href="#cardapio" data-menu="cardapio">Cardápio</a>
+        <a href="#pedidos" data-menu="pedidos">Meus pedidos</a>
+        <a href="#clube" data-menu="clube">Pontos</a>
+        <a href="#carrinho" data-menu="carrinho">Sacola</a>
+      </nav>
+      <div class="acoesCabecalho">
+        <button id="botaoTema" class="secundarioBotao" aria-label="Ativar tema escuro">Tema escuro</button>
+        <a id="botaoConta" class="principalBotao" href="#conta">Entrar</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="barraUnidade">
+    <div class="limite linhaUnidade">
+      <label for="unidade">Retirar em
+        <select id="unidade"></select>
+      </label>
+      <span id="prazoUnidade" class="textoPequeno"></span>
+      <label for="canal">Canal
+        <select id="canal">
+          <option value="web">Web</option>
+          <option value="app">App</option>
+          <option value="totem">Totem</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <p id="avisoCanal" class="limite avisoDiscreto" hidden></p>
+  <p id="avisoArmazenamento" class="limite mensagemErro" role="status" hidden></p>
+
+  <main id="conteudo" class="limite conteudo" tabindex="-1">
+    <section id="telaCardapio" class="tela">
+      <div class="destaque">
+        <div class="textoDestaque">
+          <h1>Faça seu pedido</h1>
+          <p>Escolha a unidade, adicione os pratos e retire no balcão.</p>
+          <p>Baião de dois: <strong id="precoDestaque"></strong></p>
+          <button class="principalBotao" data-produto="baiao">Adicionar baião</button>
+        </div>
+        <img src="imagens/baiao.webp" alt="Baião de dois com carne de sol e queijo coalho" width="900" height="600">
+      </div>
+
+      <div class="faixaPromocao">
+        <p id="textoCampanha">Cupom CHEGUEI10: 10% em pedidos a partir de R$ 30, com desconto de até R$ 15.</p>
+        <button id="botaoCampanha" class="secundarioBotao">Usar cupom</button>
+      </div>
+
+      <div class="corpoCardapio">
+        <div>
+          <h2>Cardápio</h2>
+          <div class="campo">
+            <label for="buscaPrato">Buscar prato</label>
+            <input type="search" id="buscaPrato" maxlength="60" placeholder="Digite o nome ou um ingrediente">
+          </div>
+          <div id="categorias" class="categorias" role="group" aria-label="Categorias"></div>
+          <div id="listaProdutos" class="listaProdutos" aria-live="polite" aria-busy="true"></div>
+          <p class="textoPequeno">Preços e disponibilidade variam por unidade. Imagem ilustrativa.</p>
+        </div>
+        <aside id="carrinhoLateral" class="carrinhoLateral" aria-label="Resumo do pedido"></aside>
+      </div>
+    </section>
+
+
+    <section id="telaCarrinho" class="tela telaEstreita" hidden></section>
+    <section id="telaPedidos" class="tela" hidden></section>
+    <section id="telaClube" class="tela telaEstreita" hidden></section>
+    <section id="telaConta" class="tela telaEstreita" hidden></section>
+    <section id="telaPrivacidade" class="tela telaEstreita" hidden></section>
+    <section id="telaPagamento" class="tela telaEstreita" hidden></section>
+    <section id="telaEquipe" class="tela" hidden></section>
+  </main>
+
+  <footer class="rodape">
+    <div class="limite">
+      <nav aria-label="Informações">
+        <a href="#privacidade">Privacidade</a>
+        <a href="#equipe">Área da equipe</a>
+        <button id="reiniciarTotem" class="botaoTexto" hidden>Encerrar atendimento</button>
+      </nav>
+      <p>Projeto acadêmico. Unidades, dados e pagamentos fictícios.</p>
+    </div>
+  </footer>
+
+  <nav class="menuInferior" aria-label="Menu do celular">
+    <a href="#cardapio" data-menu="cardapio">Cardápio</a>
+    <a href="#pedidos" data-menu="pedidos">Pedidos</a>
+    <a href="#clube" data-menu="clube">Pontos</a>
+    <a href="#carrinho" data-menu="carrinho">Sacola (<span id="quantidadeSacola">0</span>)</a>
+  </nav>
+
+  <dialog id="janelaProduto" class="janela" aria-labelledby="tituloProduto">
+    <button class="fecharJanela" data-fechar="janelaProduto" aria-label="Fechar detalhes">×</button>
+    <div id="detalheProduto"></div>
+  </dialog>
+
+  <dialog id="janelaConfirmacao" class="janela" aria-labelledby="tituloConfirmacao">
+    <h2 id="tituloConfirmacao"></h2>
+    <p id="textoConfirmacao"></p>
+    <div class="linhaBotoes">
+      <button id="cancelarConfirmacao" class="secundarioBotao">Voltar</button>
+      <button id="aceitarConfirmacao" class="principalBotao">Confirmar</button>
+    </div>
+  </dialog>
+
+  <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
+  <noscript><p class="mensagemErro">Ative o JavaScript para usar o cardápio.</p></noscript>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+OK 1 - cadastro válido com ciência do aviso
+OK 2 - nome vazio rejeitado
+OK 3 - e-mail inválido rejeitado
+OK 4 - senha curta rejeitada
+OK 5 - senhas diferentes rejeitadas
+OK 6 - cadastro sem ciência rejeitado
+OK 7 - cálculo inteiro do subtotal
+OK 8 - cupom de 10% com arredondamento
+OK 9 - desconto limitado a R$ 15
+OK 10 - cupom abaixo do mínimo rejeitado
+OK 11 - cupom inexistente rejeitado
+OK 12 - campanha desligada rejeitada
+OK 13 - cupom não acumula com pontos
+OK 14 - recompensa com saldo suficiente
+OK 15 - saldo insuficiente preserva desconto zero
+OK 16 - recompensa exige pedido de R$ 20
+OK 17 - pontos usam valor líquido inteiro
+OK 18 - sacola vazia rejeitada
+OK 19 - preço de outra unidade rejeitado
+OK 20 - quantidade decimal rejeitada
+OK 21 - indisponibilidade da gerência respeitada
+OK 22 - cozinha não confirma retirada
+OK 23 - atendente confirma somente pedido pronto
+OK 24 - texto digitado escapa caracteres HTML
+OK 25 - cadastro local armazena derivação e não senha legível
+OK 26 - cadastro duplicado é rejeitado
+OK 27 - login correto encontra a conta
+OK 28 - login incorreto é rejeitado
+OK 29 - alteração de consentimento é persistida
+OK 30 - armazenamento com JSON inválido usa padrão
+OK 31 - formato inesperado usa padrão
+OK 32 - bloqueio de gravação retorna erro claro
